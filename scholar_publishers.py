@@ -37,20 +37,30 @@ class ieee(publisher):
                 if 'img' in href and ('large.gif' in href[-1].split('-')): # get large hi-res images
                     img_url_list.append(IEEE_IMG_PREFIX + i['href'])
         return list(set(img_url_list))
-
-    def get_title_abstract(self):
-        h1_p_tags = self.soup.findAll(['h1', 'p'])
-        ind = 0
-        for i in h1_p_tags:
-            if re.split('>|<', str(i))[1] == 'h1':
-                title_ind = ind # title is the only h1 tag
-                abstract_ind = ind + 1 # find the first p tag after h1 as the abstract 
-                break
-            ind += 1
-        title = re.split('<h1>|</h1>', str(h1_p_tags[title_ind]))[1]
-        abstract = re.split('<p>|</p>', str(h1_p_tags[abstract_ind] ))[1]  
-        return title, abstract
     
+    def get_title_abstract(self):
+        """HZ updated 03/03/2017"""
+        abstracts = self.soup.findAll(attrs={"class" : "abstract-text ng-binding"})
+        if len(abstracts) == 1:
+            abstract = str(abstracts[0])
+        # print 'abstract:', abstract
+        abstract = abstract.strip('<h1 class="document-title"><span class="ng-binding" mathjax-bind="" ng-bind-html="vm.displayDocTitle">')
+        h1s = self.soup.findAll(attrs={"class": 'document-title'})
+        if len(h1s) == 1:
+            title = str(h1s[0])
+        title = title.strip('<div class="abstract-text ng-binding" ng-bind-html="::vm.details.abstract">')
+        # raise TypeError
+        body = self.soup.findAll(attrs = {"class": "section"})
+        print 'length of full body', len(body)
+        return title, abstract
+
+    def get_main_body(self):
+        divs = self.soup.findAll(['div'])
+        ps = self.soup.findAll(['p'])
+        print 'length of ps', len(ps)
+        print len(ps[0]), len(ps[1])
+        # print 'length of divs', len(divs)
+
         
 class ScienceDirect(publisher):
     # Elsevier, including composite science and tech, polymer
@@ -164,6 +174,6 @@ class rsc(publisher):
         title = title.encode('utf8', 'replace')
         print title
         print '---'
-        abstract = abstract.encode('utf8', 'replace')
+        # abstract = abstract.encode('utf8', 'replace')
         print abstract
         return title, abstract

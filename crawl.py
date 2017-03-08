@@ -28,10 +28,13 @@ def crawl(query_key_words, num_query_results):
     for article in articles:
         title = article.attrs['title'][0]
         url = article.attrs['url'][0]
+        print url
         publisher = '' # default: no match with existing publisher 
-        if str(url).split('=')[0] == 'http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber':
+        if str(url).strip('http://').split('/')[0] == 'ieeexplore.ieee.org':
+        # if str(url).split('=')[0] == 'http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber':
             publisher = 'ieee'
-            article_num = str(url).split('=')[1]
+            # article_num = str(url).split('=')[1]
+            article_num = str(url).strip('http://').split('/')[-1]
         elif str(url).split('/')[2] == 'www.sciencedirect.com':
             publisher = 'ScienceDirect'
             article_num = str(url).split('/')[6]
@@ -81,6 +84,10 @@ def crawl(query_key_words, num_query_results):
                 crawler.download_img(img_list, paper_dir)
                 # Get title and abstract of the paper and write to the paper folder
                 title, abstract = crawler.get_title_abstract()
+
+                # 030317 add main body
+                main_body_text = crawler.get_main_body()
+
                 title_file = open(paper_dir+'title.txt', "w")
                 title_file.write(title)
                 title_file.close()
@@ -218,6 +225,6 @@ if __name__=='__main__':
     #     num_query_results = 1 
     #     crawl(query_key_words, num_query_results)
     
-    query_key_words ='Functionalized graphene BaTiO3 ferroelectric polymer nanodielectric composites with high permittivity, low dielectric loss, and low percolation threshold'
-    num_query_results = 20
+    query_key_words ='10.1109/TDEI.2013.004165'
+    num_query_results = 1
     crawl(query_key_words, num_query_results)
