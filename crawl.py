@@ -8,6 +8,10 @@ from scholar import *
 from scholar_publishers import *
 from urllib import urlretrieve
 import pandas as pd
+import time
+import csv
+from itertools import izip
+import random
 
 def crawl(query_key_words, num_query_results):
     # Apply google scholar querier
@@ -19,16 +23,17 @@ def crawl(query_key_words, num_query_results):
     query.set_num_page_results(num_query_results)
     querier.send_query(query)
     articles = querier.articles
-    
-    print len(articles)
+
+    print 'The number of articles returned',len(articles)
     
     list_query_result = {}
+    url=[]
     # Determine publisher from URL
     # Parse DOI or article number from returned url from google scholar search
     for article in articles:
         title = article.attrs['title'][0]
         url = article.attrs['url'][0]
-        print url
+        #print url,len(url)
         publisher = '' # default: no match with existing publisher 
         if str(url).strip('http://').split('/')[0] == 'ieeexplore.ieee.org':
         # if str(url).split('=')[0] == 'http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber':
@@ -41,13 +46,12 @@ def crawl(query_key_words, num_query_results):
         elif str(url).split('/')[2] == 'pubs.acs.org':
             publisher = 'acs'
             article_num = str(url).split('/')[-1]
-        elif str(url).split('/')[2] == 'scitation.aip.org':
+        ### 03/07/17 Yixing updated aip
+        elif str(url).split('/')[2] == 'aip.scitation.org':
             publisher = 'aip'
-            words = str(url).split('/')[-5:]
-            article_num = ''
-            for word in words:
-                article_num += word+'_'
-            article_num = article_num[:-1]
+            article_num = str(url).split('/')[-1]
+            print article_num
+
         elif str(url).split('/')[2] == 'pubs.rsc.org':
             publisher = 'rsc'
             words = str(url).split('/')[-3:]
@@ -159,16 +163,12 @@ def crawl(query_key_words, num_query_results):
                 # Close browser
                 crawler.close_browser()
         elif publisher == 'aip':
-            # STILL WORKING ON THIS
-            prefix = 'http://scitation.aip.org/content/aip/journal/'
+            # STILL WORKING ON THIS  update by Yixing
+            prefix = 'http://aip.scitation.org/doi/full/10.1063/'
             # for each paper belonging to a publisher
             for i in xrange(len(list_query_result[publisher])):
                 article_num = list_query_result[publisher][i]
-                words = article_num.split('_')
-                sub_url_str = ''
-                for word in words:
-                    sub_url_str += word+'/'
-                paper_url = prefix + sub_url_str
+                paper_url = prefix + str(article_num)
                 print paper_url
                 # initialize crawler
                 crawler = aip(paper_url)
@@ -213,18 +213,37 @@ def crawl(query_key_words, num_query_results):
                 abstract_file.write(abstract)
                 abstract_file.close()
                 # Close browser
-                crawler.close_browser()                    
+                crawler.close_browser()
+
+    return 'NO link found' if len(url)==0 else url 
+
 
 if __name__=='__main__':
-    # doi_df = pd.read_csv('doi_list1.csv', header=None)
-    # 
-    # for i in range(doi_df.shape[0]):
-    #     query_key_words = doi_df.iloc[i][0]
-    #     print query_key_words
-    # # query_key_words = 'polymer nanodielectric'
-    #     num_query_results = 1 
-    #     crawl(query_key_words, num_query_results)
+    doi_df = pd.read_csv('doi_list1.csv', header=None)
+    urllist=[]
+    doilist=[]
+    for i in range(doi_df.shape[0]):
+        query_key_words = doi_df.iloc[i][0]
+        doilist.append(query_key_words)
+        print query_key_words
+    # query_key_words = 'polymer nanodielectric'
+        num_query_results = 1 
+        timestop=random.random()*30+30
+        print "The stopping time is",timestop
+
+        time.sleep(timestop)
+        url=crawl(query_key_words, num_query_results)
+        print url
+        urllist.append(url)
+    ##write url to a csvfile
+    with open('url.csv','wb') as f:
+        writer=csv.writer(f)
+        writer.writerows(izip(doilist,urllist))
+
+
     
-    query_key_words ='10.1109/TDEI.2013.004165'
-    num_query_results = 1
-    crawl(query_key_words, num_query_results)
+    # query_key_words ='10.1016/j.compscitech.2007.05.021'
+    # num_query_results = 1
+
+    # url=crawl(query_key_words, num_query_results)
+    # print url
