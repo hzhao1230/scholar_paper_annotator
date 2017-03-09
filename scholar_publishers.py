@@ -39,16 +39,26 @@ class ieee(publisher):
         return list(set(img_url_list))
     
     def get_title_abstract(self):
-        """HZ updated 03/03/2017"""
+        """HZ updated 03/03/2017""" ###YW updated 03/07 
+      
         abstracts = self.soup.findAll(attrs={"class" : "abstract-text ng-binding"})
         if len(abstracts) == 1:
             abstract = str(abstracts[0])
-        # print 'abstract:', abstract
-        abstract = abstract.strip('<h1 class="document-title"><span class="ng-binding" mathjax-bind="" ng-bind-html="vm.displayDocTitle">')
+        print 'abstract:', abstract
+        abstract = abstract.strip('<div class="abstract-text ng-binding" ng-bind-html="::vm.details.abstract"> </')
+
         h1s = self.soup.findAll(attrs={"class": 'document-title'})
         if len(h1s) == 1:
             title = str(h1s[0])
-        title = title.strip('<div class="abstract-text ng-binding" ng-bind-html="::vm.details.abstract">')
+        title = title.strip('<h1 class="document-title">')
+        title = title.strip()
+        title = title.strip('<span class="ng-binding" mathjax-bind="" ng-bind-html="vm.displayDocTitle">')
+        title = title.strip('</')
+        title = title.strip()
+        title = title.strip('<!-- ngIf: vm.titleContainsRedline -->')
+        title = title.strip()
+        title = title.strip('</span>')
+
         # raise TypeError
         body = self.soup.findAll(attrs = {"class": "section"})
         print 'length of full body', len(body)
@@ -138,23 +148,22 @@ class acs(publisher):
         return img_url_list
     
 class aip(publisher):
-    # AIP. Last tested 06/08/2016
+    # AIP. Last tested 06/08/2016 Updated 03/07/17-YIxing
     def get_title_abstract(self):
         div_tags = self.soup.findAll('div')
+        #print len(div_tags),type(div_tags)
         for div in div_tags:
-            if div.has_key('class') and div['class'][0]=='metadata_title':
-                title = re.split('<div class="metadata_title">|</div>', str(div))[1]
+            if div.has_key('class') and div['class'][0]=='hlFld-Title':
+                title = re.split('<h2>|</h2>', str(div))[1]
                 print title
+                #print 'title is',title
                 break
-        p_tags = self.soup.findAll('p')
-        ind = 0
-        for p in p_tags:
-            if p.has_key('class') and p['class'][0]=='description':
-                p_abstract = p_tags[ind+1]
-                print p_abstract
-                abstract = re.split('<p>|</p>', str(p_abstract))[1]
+        for div in div_tags:
+            if div.has_key('class') and div['class'][0]=='abstractSection':
+                abstract = re.split('<div class="NLM_paragraph">|</div>', str(div))[1]
+                print abstract
+                #print 'abstract is',abstract
                 break
-            ind += 1
         return title, abstract        
 
 class rsc(publisher):
